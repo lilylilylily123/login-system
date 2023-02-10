@@ -19,6 +19,11 @@ Do <code>go build main.go</code>, and then run <code>./main</code>
 
 Visit <a href="localhost:1000"><code href="localhost:1000">localhost:1000</code></a> in your browser!
 
+## Demos
+
+There will eventually be a demo, hosted on my personal site, once I have a production-level product.
+
+ETA: 2/28/23 (February 28th, 2023)
 ## Route Index 
 
 
@@ -34,4 +39,10 @@ There are a couple of other routes, but those are all used for internal things s
 
 **Note:**
 
-Since this is written with bcrypt, all passwords are automatically salted when you convert them to hash. Obviously it's still not extremely secure, but it's defenitely better than nothing.
+Since this is written with bcrypt, all passwords are automatically salted when you convert them to hash. 
+Obviously it's still not extremely secure, but it's defenitely better than nothing.
+
+## Usage
+
+I am fine with anybody using this, either as a learning resource or just copy pasting. 
+This was a learning project for me, and I hope that it can benefit you as well!
