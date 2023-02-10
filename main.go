@@ -94,12 +94,14 @@ func checkForPass(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("Password not registered")
 		http.Redirect(w, r, "/", 302)
-		http.Error(w, "Not registered!", 300)
+		//http.Error(w, "Not registered!", 300)
 		//panic(err)
 	} else {
 		encryptPass := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(checkPass))
 		if encryptPass != nil {
-			panic(encryptPass)
+			//log.Println("didnt work")
+			http.Redirect(w, r, "/", 302)
+			//panic(encryptPass)
 		} else {
 			//fmt.Println(encryptPass)
 			expires := time.Now().Add(time.Minute * 5)
@@ -108,7 +110,7 @@ func checkForPass(w http.ResponseWriter, r *http.Request) {
 			//http.ServeFile(w, r, "./public/homepage/index.html")
 			http.SetCookie(w, &cookie)
 			log.Println("Pass is registered")
-			http.Redirect(w, r, "/homepage/", 302)
+			http.Redirect(w, r, "/homepage/loggedin/", 302)
 		}
 	}
 }
@@ -130,15 +132,18 @@ func homepageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	} else {
-		http.ServeFile(w, r, "./public/homepage/index.html")
+		http.Handle("/homepage/loggedin/", http.StripPrefix("/homepage/loggedin/", http.FileServer(http.Dir("./public/homepage/"))))
+		http.Redirect(w, r, "/homepage/loggedin/", 302)
 	}
 }
 
 func main() {
-	http.HandleFunc("/signup/", signUpFunc)
+	http.HandleFunc("/signup/newuser/", signUpFunc)
 	http.HandleFunc("/redirect/", loginHandler)
 	http.HandleFunc("/homepage/", homepageHandler)
-	http.Handle("/", http.FileServer(http.Dir("./public")))
+	//http.Handle("/homepage/loggedin/", http.StripPrefix("/homepage/loggedin/", http.FileServer(http.Dir("./public/homepage/"))))
+	http.Handle("/signup/", http.StripPrefix("/signup/", http.FileServer(http.Dir("./public/mainpage"))))
 	http.Handle("/login/", http.StripPrefix("/login/", (http.FileServer(http.Dir("./public/login")))))
+	http.Handle("/", http.StripPrefix("/login/", (http.FileServer(http.Dir("./public/login")))))
 	log.Fatal(http.ListenAndServe(":1000", nil))
 }
