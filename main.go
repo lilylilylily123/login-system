@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func signUpFunc(w http.ResponseWriter, r *http.Request) {
@@ -22,8 +23,8 @@ func signUpFunc(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		//db.BeginTx()
-		//db.Exec("CREATE TABLE IF NOT EXISTS userdetails('username' TEXT NOT NULL 'email' TEXT NOT NULL 'password' TEXT NOT NULL)")
+		// db.BeginTx()
+		// db.Exec("CREATE TABLE IF NOT EXISTS userdetails('username' TEXT NOT NULL 'email' TEXT NOT NULL 'password' TEXT NOT NULL)")
 		stmt, err := db.Prepare("INSERT INTO userdetails(username, email, password) values(?,?,?)")
 		if err != nil {
 			panic(err)
@@ -44,6 +45,7 @@ func signUpFunc(w http.ResponseWriter, r *http.Request) {
 		log.Println("NO WOKR")
 	}
 }
+
 func checkForUsername(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "./users.db")
 	if err != nil {
@@ -60,10 +62,11 @@ func checkForUsername(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		log.Printf("Username %v is not registered.", checkUser)
-		//http.Error(w, "Username isn't registered!", 302)
-		//http.Redirect(w, r, "/", 302)
+		// http.Error(w, "Username isn't registered!", 302)
+		// http.Redirect(w, r, "/", 302)
 	}
 }
+
 func checkForEmail(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "./users.db")
 	if err != nil {
@@ -81,6 +84,7 @@ func checkForEmail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Email isn't registered!", 302)
 	}
 }
+
 func checkForPass(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "./users.db")
 	if err != nil {
@@ -90,24 +94,24 @@ func checkForPass(w http.ResponseWriter, r *http.Request) {
 	var hashed string
 	err = db.QueryRow("select password from userdetails where username=?",
 		r.FormValue("username")).Scan(&hashed)
-	//fmt.Println(hashed)
+	// fmt.Println(hashed)
 	if err != nil {
 		log.Println("Password not registered")
 		http.Redirect(w, r, "/", 302)
-		//http.Error(w, "Not registered!", 300)
-		//panic(err)
+		// http.Error(w, "Not registered!", 300)
+		// panic(err)
 	} else {
 		encryptPass := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(checkPass))
 		if encryptPass != nil {
-			//log.Println("didnt work")
+			// log.Println("didnt work")
 			http.Redirect(w, r, "/", 302)
-			//panic(encryptPass)
+			// panic(encryptPass)
 		} else {
-			//fmt.Println(encryptPass)
+			// fmt.Println(encryptPass)
 			expires := time.Now().Add(time.Minute * 5)
 			fmt.Printf("Login expires in: %v minutes", expires)
 			cookie := http.Cookie{Name: "loggedIn", Value: "true", Path: "/", Expires: expires}
-			//http.ServeFile(w, r, "./public/homepage/index.html")
+			// http.ServeFile(w, r, "./public/homepage/index.html")
 			http.SetCookie(w, &cookie)
 			log.Println("Pass is registered")
 			http.Redirect(w, r, "/homepage/loggedin/", 302)
@@ -119,12 +123,13 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	checkForUsername(w, r)
 	checkForPass(w, r)
 }
+
 func homepageHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := r.Cookie("loggedIn")
 	if err != nil {
 		switch {
 		case errors.Is(err, http.ErrNoCookie):
-			//fmt.Fprintln(w, "Not logged in!")
+			// fmt.Fprintln(w, "Not logged in!")
 			http.Redirect(w, r, "/login/", 302)
 		default:
 			log.Println(err)
@@ -141,7 +146,7 @@ func main() {
 	http.HandleFunc("/signup/newuser/", signUpFunc)
 	http.HandleFunc("/redirect/", loginHandler)
 	http.HandleFunc("/homepage/", homepageHandler)
-	//http.Handle("/homepage/loggedin/", http.StripPrefix("/homepage/loggedin/", http.FileServer(http.Dir("./public/homepage/"))))
+	// http.Handle("/homepage/loggedin/", http.StripPrefix("/homepage/loggedin/", http.FileServer(http.Dir("./public/homepage/"))))
 	http.Handle("/signup/", http.StripPrefix("/signup/", http.FileServer(http.Dir("./public/mainpage"))))
 	http.Handle("/login/", http.StripPrefix("/login/", (http.FileServer(http.Dir("./public/login")))))
 	http.Handle("/", http.StripPrefix("/login/", (http.FileServer(http.Dir("./public/login")))))
