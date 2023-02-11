@@ -5,6 +5,14 @@
     <link href="./mainpage.css" rel="stylesheet">
     <meta charset="UTF-8">
     <title>Main Page</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script type="text/javascript">
+        function onClick() {
+            if (fetch("http://localhost:1000/dev/checkuserexists/") === false) {
+                alert("ajdajdjadja")
+            }
+        }
+    </script>
 </head>
 <body>
 <div class="form1">
@@ -12,7 +20,7 @@
       Username: <input type="text" name="username" placeholder="Panthium"/><br>
       Email: <input type="email" name="email" placeholder="panthium@utils.xyz"/><br>
       Password: <input type="password" name="password" placeholder="panthium"/><br>
-      <input class="submitButton" type="submit" value="Submit"/>
+      <input class="submitButton" onclick="onClick()" type="submit" value="Submit"/>
   </form>
 </div>
 </body>

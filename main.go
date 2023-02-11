@@ -12,37 +12,31 @@ import (
 )
 
 func signUpFunc(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
-		log.Println("Sending form data...")
-		passString, err := bcrypt.GenerateFromPassword([]byte(r.FormValue("password")), bcrypt.DefaultCost)
-		if err != nil {
-			panic(err)
-		}
-		db, err := sql.Open("sqlite3", "./users.db")
-		if err != nil {
-			panic(err)
-		}
-		//db.BeginTx()
-		//db.Exec("CREATE TABLE IF NOT EXISTS userdetails('username' TEXT NOT NULL 'email' TEXT NOT NULL 'password' TEXT NOT NULL)")
-		stmt, err := db.Prepare("INSERT INTO userdetails(username, email, password) values(?,?,?)")
-		if err != nil {
-			panic(err)
-		}
-		res, err := stmt.Exec(r.FormValue("username"), r.FormValue("email"), passString)
-		if err != nil {
-			panic(err)
-		}
-		id, err := res.LastInsertId()
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Println(id)
-		fmt.Println(string(passString))
-		http.Redirect(w, r, "/login/", 302)
-	} else {
-		log.Println("NO WOKR")
+	log.Println("Sending form data...")
+	passString, err := bcrypt.GenerateFromPassword([]byte(r.FormValue("password")), bcrypt.DefaultCost)
+	if err != nil {
+		panic(err)
 	}
+	db, err := sql.Open("sqlite3", "./users.db")
+	if err != nil {
+		panic(err)
+	}
+	stmt, err := db.Prepare("INSERT INTO userdetails(username, email, password) values(?,?,?)")
+	if err != nil {
+		panic(err)
+	}
+	res, err := stmt.Exec(r.FormValue("username"), r.FormValue("email"), passString)
+	if err != nil {
+		panic(err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(id)
+	//fmt.Println(string(passString))
+	http.Redirect(w, r, "/login/", 302)
 }
 func checkForUsername(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "./users.db")
@@ -113,6 +107,7 @@ func checkForPass(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/homepage/loggedin/", 302)
 		}
 	}
+	return
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -131,12 +126,32 @@ func homepageHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "server error", http.StatusInternalServerError)
 		}
 		return
-	} else {
-		http.Handle("/homepage/loggedin/", http.StripPrefix("/homepage/loggedin/", http.FileServer(http.Dir("./public/homepage/"))))
-		http.Redirect(w, r, "/homepage/loggedin/", 302)
+	} else if err == nil {
+		http.ServeFile(w, r, "public/homepage/index.html")
 	}
 }
-
+func checkUserExists(w http.ResponseWriter, r *http.Request) {
+	username := r.FormValue("username")
+	if checkUserName(username) == true {
+		http.Redirect(w, r, "/signup/", 302)
+	} else {
+		http.Redirect(w, r, "/signup/newuser/", 302)
+	}
+}
+func checkUserName(username string) bool {
+	db, _ := sql.Open("sqlite3", "./users.db")
+	user := db.QueryRow("select username from userdetails where username=?", username)
+	temp := ""
+	user.Scan(&temp)
+	log.Println(temp)
+	if temp != "" {
+		log.Println("Username is registered")
+		return true
+	} else {
+		log.Printf("Username %v is not registered.", username)
+		return false
+	}
+}
 func main() {
 	http.HandleFunc("/signup/newuser/", signUpFunc)
 	http.HandleFunc("/redirect/", loginHandler)
@@ -145,5 +160,6 @@ func main() {
 	http.Handle("/signup/", http.StripPrefix("/signup/", http.FileServer(http.Dir("./public/mainpage"))))
 	http.Handle("/login/", http.StripPrefix("/login/", (http.FileServer(http.Dir("./public/login")))))
 	http.Handle("/", http.StripPrefix("/login/", (http.FileServer(http.Dir("./public/login")))))
+	http.HandleFunc("/dev/checkuserexists/", checkUserExists)
 	log.Fatal(http.ListenAndServe(":1000", nil))
 }
