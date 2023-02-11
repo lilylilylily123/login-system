@@ -21,9 +21,8 @@ Visit <a href="localhost:1000"><code href="localhost:1000">localhost:1000</code>
 
 ## Demos
 
-There will eventually be a demo, hosted on my personal site, once I have a production-level product.
+http://junkyard.lilylabs.me/
 
-ETA: 2/28/23 (February 28th, 2023)
 ## Route Index 
 
 
