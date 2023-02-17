@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"math/rand"
 	"net/http"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func signUpFunc(w http.ResponseWriter, r *http.Request) {
@@ -38,6 +39,7 @@ func signUpFunc(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(id)
 	http.Redirect(w, r, "/login/challenge/redirect/", 302)
 }
+
 func checkForUsername(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "./users.db")
 	if err != nil {
@@ -56,6 +58,7 @@ func checkForUsername(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Username %v is not registered.", checkUser)
 	}
 }
+
 func checkForEmail(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "./users.db")
 	if err != nil {
@@ -73,6 +76,7 @@ func checkForEmail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Email isn't registered!", 302)
 	}
 }
+
 func checkForPass(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "./users.db")
 	if err != nil {
@@ -100,10 +104,12 @@ func checkForPass(w http.ResponseWriter, r *http.Request) {
 	}
 	return
 }
+
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	checkForUsername(w, r)
 	checkForPass(w, r)
 }
+
 func homepageHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := r.Cookie("loggedIn")
 	if err != nil {
@@ -130,6 +136,7 @@ func challengeSignup(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login/", 302)
 	}
 }
+
 func insertChallenge(sec1 string, sec2 string, sec3 string, user string) {
 	db, _ := sql.Open("sqlite3", "./users.db")
 	log.Println(sec1, sec2, sec3, user)
@@ -142,6 +149,7 @@ func insertChallenge(sec1 string, sec2 string, sec3 string, user string) {
 		return
 	}
 }
+
 func checkChallenge(w http.ResponseWriter, r *http.Request) {
 	db, _ := sql.Open("sqlite3", "./users.db")
 	seventwodotstwentythreepm, _ := db.Prepare("select sec1, sec2, sec3 from userdetails where username= ?")
@@ -162,6 +170,7 @@ func checkChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
 func serveChallenge(w http.ResponseWriter, r *http.Request) {
 	_, err := r.Cookie("loggedIn")
 	if err != nil {
@@ -184,9 +193,11 @@ func serveChallenge(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
 func redirectChallenge(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./public/challengeSet/challenge.html")
 }
+
 func main() {
 	http.HandleFunc("/login/challenge/", serveChallenge)
 	http.HandleFunc("/login/challenge/redirect/", redirectChallenge)
