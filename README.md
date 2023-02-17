@@ -1,6 +1,8 @@
 # login-system
 super WIP login system demo, just to prove that i can do it
 
+Now comes with a security question verification system!
+
 ## Build Instructions
 Clone this repo, and initiliaze Go:
 `git clone https://github.com/lilylilylily123/login-system`
@@ -9,9 +11,13 @@ Clone this repo, and initiliaze Go:
 Create a new database named <code>db.users</code>, and create a table with the following fields: <br>
 | userdetails  | Values |
 | ------------- | ------------- |
-| username  | *string*  |
-| email  | *string*  |
-| password | *string* |
+| username  | ***string***  |
+| email  | ***string***  |
+| password | ***string*** |
+| sec1 | ***string*** |
+| sec2 | ***string*** |
+| secc3 | ***string*** |
+
 
 Save your table, and then bam! You're all set.
 
@@ -21,7 +27,7 @@ Visit <a href="localhost:1000"><code href="localhost:1000">localhost:1000</code>
 
 ## Demos
 
-http://junkyard.lilylabs.me/
+http://junkyard.lilylabs.me/signup/ (currently not working)
 
 ## Route Index 
 
@@ -31,6 +37,8 @@ http://junkyard.lilylabs.me/
 `/login/` -- Login Page (will redirect to signup page if user/pass doesn't exist
 
 `/homepage/` -- Home Page (only accessible if logged in)
+
+`/login/challenge/` -- Security Challenge Phrase authorization
 
 There are a couple of other routes, but those are all used for internal things such as setting cookies/redirection.
 
