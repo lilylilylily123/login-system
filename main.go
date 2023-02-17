@@ -7,6 +7,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 	"log"
+	"math/rand"
 	"net/http"
 	"time"
 )
@@ -35,8 +36,7 @@ func signUpFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println(id)
-	//fmt.Println(string(passString))
-	http.Redirect(w, r, "/login/", 302)
+	http.Redirect(w, r, "/login/challenge/redirect/", 302)
 }
 func checkForUsername(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "./users.db")
@@ -54,8 +54,6 @@ func checkForUsername(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		log.Printf("Username %v is not registered.", checkUser)
-		//http.Error(w, "Username isn't registered!", 302)
-		//http.Redirect(w, r, "/", 302)
 	}
 }
 func checkForEmail(w http.ResponseWriter, r *http.Request) {
@@ -84,32 +82,24 @@ func checkForPass(w http.ResponseWriter, r *http.Request) {
 	var hashed string
 	err = db.QueryRow("select password from userdetails where username=?",
 		r.FormValue("username")).Scan(&hashed)
-	//fmt.Println(hashed)
 	if err != nil {
 		log.Println("Password not registered")
 		http.Redirect(w, r, "/", 302)
-		//http.Error(w, "Not registered!", 300)
-		//panic(err)
 	} else {
 		encryptPass := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(checkPass))
 		if encryptPass != nil {
-			//log.Println("didnt work")
 			http.Redirect(w, r, "/", 302)
-			//panic(encryptPass)
 		} else {
-			//fmt.Println(encryptPass)
 			expires := time.Now().Add(time.Minute * 5)
 			fmt.Printf("Login expires in: %v minutes", expires)
 			cookie := http.Cookie{Name: "loggedIn", Value: "true", Path: "/", Expires: expires}
-			//http.ServeFile(w, r, "./public/homepage/index.html")
 			http.SetCookie(w, &cookie)
 			log.Println("Pass is registered")
-			http.Redirect(w, r, "/homepage/loggedin/", 302)
+			http.Redirect(w, r, "/login/challenge/", 302)
 		}
 	}
 	return
 }
-
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	checkForUsername(w, r)
 	checkForPass(w, r)
@@ -119,7 +109,6 @@ func homepageHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, http.ErrNoCookie):
-			//fmt.Fprintln(w, "Not logged in!")
 			http.Redirect(w, r, "/login/", 302)
 		default:
 			log.Println(err)
@@ -130,36 +119,84 @@ func homepageHandler(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "public/homepage/index.html")
 	}
 }
-func checkUserExists(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("username")
-	if checkUserName(username) == true {
-		http.Redirect(w, r, "/signup/", 302)
-	} else {
-		http.Redirect(w, r, "/signup/newuser/", 302)
+
+func challengeSignup(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		sec1 := r.FormValue("sec1")
+		sec2 := r.FormValue("sec2")
+		sec3 := r.FormValue("sec3")
+		user := r.FormValue("username")
+		insertChallenge(sec1, sec2, sec3, user)
+		http.Redirect(w, r, "/login/", 302)
 	}
 }
-func checkUserName(username string) bool {
+func insertChallenge(sec1 string, sec2 string, sec3 string, user string) {
 	db, _ := sql.Open("sqlite3", "./users.db")
-	user := db.QueryRow("select username from userdetails where username=?", username)
-	temp := ""
-	user.Scan(&temp)
-	log.Println(temp)
-	if temp != "" {
-		log.Println("Username is registered")
-		return true
-	} else {
-		log.Printf("Username %v is not registered.", username)
-		return false
+	log.Println(sec1, sec2, sec3, user)
+	exec, err := db.Prepare("update userdetails set sec1=?, sec2=?, sec3=? where username=?")
+	if err != nil {
+		return
 	}
+	_, err = exec.Exec(sec1, sec2, sec3, user)
+	if err != nil {
+		return
+	}
+}
+func checkChallenge(w http.ResponseWriter, r *http.Request) {
+	db, _ := sql.Open("sqlite3", "./users.db")
+	seventwodotstwentythreepm, _ := db.Prepare("select sec1, sec2, sec3 from userdetails where username= ?")
+	sec1 := r.FormValue("sec1")
+	sec2 := r.FormValue("sec2")
+	sec3 := r.FormValue("sec3")
+	user := r.FormValue("username")
+	rows, _ := seventwodotstwentythreepm.Query(user)
+	var sec1t, sec2t, sec3t string
+	for rows.Next() {
+		rows.Scan(&sec1t, &sec2t, &sec3t)
+	}
+	if sec1 == sec1t && sec2 == sec2t && sec3 == sec3t {
+		http.Redirect(w, r, "/homepage/", 302)
+		return
+	} else {
+		http.ServeFile(w, r, "./public/challengeCheck/challenge.html")
+		return
+	}
+}
+func serveChallenge(w http.ResponseWriter, r *http.Request) {
+	_, err := r.Cookie("loggedIn")
+	if err != nil {
+		switch {
+		case errors.Is(err, http.ErrNoCookie):
+			log.Println("User tried to login but wasn't logged in")
+			http.Redirect(w, r, "/login/", 302)
+		default:
+			log.Println(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+		}
+		return
+	} else if err == nil {
+		rand.New(rand.NewSource(58184))
+		randn := rand.Intn(6)
+		if randn == 4 {
+			http.ServeFile(w, r, "./public/challengeCheck/challenge.html")
+		} else {
+			http.Redirect(w, r, "/homepage/", 302)
+		}
+	}
+}
+func redirectChallenge(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "./public/challengeSet/challenge.html")
 }
 func main() {
+	http.HandleFunc("/login/challenge/", serveChallenge)
+	http.HandleFunc("/login/challenge/redirect/", redirectChallenge)
+	http.HandleFunc("/login/challenge/check/", checkChallenge)
+	http.HandleFunc("/login/challenge/signup/", challengeSignup)
 	http.HandleFunc("/signup/newuser/", signUpFunc)
 	http.HandleFunc("/redirect/", loginHandler)
 	http.HandleFunc("/homepage/", homepageHandler)
-	//http.Handle("/homepage/loggedin/", http.StripPrefix("/homepage/loggedin/", http.FileServer(http.Dir("./public/homepage/"))))
 	http.Handle("/signup/", http.StripPrefix("/signup/", http.FileServer(http.Dir("./public/mainpage"))))
-	http.Handle("/login/", http.StripPrefix("/login/", (http.FileServer(http.Dir("./public/login")))))
-	http.Handle("/", http.StripPrefix("/login/", (http.FileServer(http.Dir("./public/login")))))
-	http.HandleFunc("/dev/checkuserexists/", checkUserExists)
+	http.Handle("/login/", http.StripPrefix("/login/", http.FileServer(http.Dir("./public/login"))))
+	http.Handle("/", http.StripPrefix("/login/", http.FileServer(http.Dir("./public/login"))))
 	log.Fatal(http.ListenAndServe(":1000", nil))
 }
